@@ -104,6 +104,43 @@ Source-Repo vorhanden.
 - **Trigger-Log-Daten** — Working-Output, jeden Tag neu erzeugbar.
 - **API-Keys** — in `config/config.json` (gitignored).
 
+## GitHub-About-Settings (nach'm Push auf github.com setzen)
+
+### Description (gewählt: Englisch, international)
+
+```
+Self-hosted stock-watchlist + auto-scoring dashboard. Pulls live data
+from yfinance, scores each ticker 0-100, runs entirely on your machine.
+MIT-licensed, no API keys required for core features.
+```
+
+### Topics (12, in Reihenfolge der Wichtigkeit)
+
+```
+yfinance
+flask
+python
+stock-screener
+watchlist
+scoring
+self-hosted
+personal-finance
+markdown-wiki
+mit-license
+fundamental-analysis
+ticker
+```
+
+### Repo-Features (auf GitHub-Seite setzen)
+
+| Feature | Status |
+|---|---|
+| Wikis | ❌ ausschalten (eigene `wissensdatenbank/` reicht) |
+| Projects | ❌ ausschalten |
+| Discussions | ✅ anschalten (passt zu CONTRIBUTING.md) |
+| Sponsorship | optional, nur wenn gewünscht |
+| Branch-Protection auf `main` | „Require pull request review" + „Require status checks to pass" → erzwingt CI |
+
 ## Offene Punkte für v2
 
 - `ANLEITUNG-aktien-scout-fuer-inge-marcel.md` könnte generalisiert werden
