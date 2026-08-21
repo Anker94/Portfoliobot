@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Übersicht · Portfoliobot{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <p class="eyebrow">Heute</p>
+  <h1 class="display">Übersicht</h1>
+  <p class="lede">Was im Portfoliobot gerade anliegt — Kennzahlen, letzte Trigger, Stand der drei Datenquellen.</p>
+</section>
+
+<section class="kpi-grid" data-stagger-children>
+  <article class="kpi">
+    <p class="kpi-label">Aktive Positionen</p>
+    <p class="kpi-value mono">{{ n_active }}</p>
+    <p class="kpi-sub mono">real geführt</p>
+  </article>
+
+  <article class="kpi">
+    <p class="kpi-label">Letzte Trigger</p>
+    <p class="kpi-value mono">{{ last_triggers|length }}</p>
+    <p class="kpi-sub mono">der letzten 5 sichtbar</p>
+  </article>
+</section>
+
+<section class="section">
+  <header class="section-head">
+    <h2 class="h2">Letzte Trigger</h2>
+    <a href="{{ url_for('trigger_log') }}" class="link">Alle anzeigen →</a>
+  </header>
+
+  {% if last_triggers %}
+    <ul class="trigger-list" data-stagger-children>
+      {% for tr in last_triggers %}
+        <li class="trigger">
+          <div class="trigger-side">
+            <span class="badge badge-{{ tr.ausloesung }}">{{ tr.ausloesung|upper }}</span>
+          </div>
+          <div class="trigger-body">
+            <p class="trigger-ticker">{{ tr.ticker }}</p>
+            <p class="trigger-stand mono">{{ tr.stand|dt }}</p>
+          </div>
+          <div class="trigger-tail mono">
+            {% set em = tr.details.entscheidung %}
+            {% if em and em.buy_trigger_fired %}<span class="bullet bullet-on"></span> BUY
+            {% elif em and em.sell_trigger_fired %}<span class="bullet bullet-on"></span> SELL
+            {% else %}<span class="bullet bullet-off"></span> kein Feuer{% endif %}
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="empty">Noch keine Trigger im Log.</p>
+  {% endif %}
+</section>
+
+<section class="section section-2col">
+  <div>
+    <header class="section-head"><h2 class="h2">Datenquellen</h2></header>
+    <ul class="src-list">
+      <li><span class="mono">stock.db</span> · <code>{{ n_active }}</code> aktive Positionen</li>
+      <li><span class="mono">trigger_log.json</span> · {{ last_triggers|length }} / letzte 5</li>
+      <li><span class="mono">sparplan-tracking*.json</span> · 3 erwartet</li>
+      <li><span class="mono">wissensdatenbank/aktien/*.md</span> · siehe Reiter</li>
+    </ul>
+  </div>
+  <div>
+    <header class="section-head"><h2 class="h2">Was nicht in Phase 1 ist</h2></header>
+    <ul class="src-list">
+      <li>Kein Schreiben — kein Trigger auslösen, keine Position anlegen, kein Sparplan-Kauf</li>
+      <li>Kein Cron, kein Telegram, keine Hermes-Integration</li>
+      <li>Keine Authentifizierung — läuft nur lokal auf 127.0.0.1</li>
+    </ul>
+  </div>
+</section>
+{% endblock %}

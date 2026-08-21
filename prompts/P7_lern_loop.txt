@@ -1,0 +1,25 @@
+# P7 — Meta-Review / Lern-Loop (monatlich, Opus/Top-Modell)
+# System bewertet sich selbst. Harte Stichproben-Disziplin.
+
+Gelieferte Daten:
+- Alle Empfehlungen mit Outcomes, gruppiert nach Typ/Confidence/Regime
+- Trefferquote nach Confidence-Stufe
+- Attribution-Matrix (E6): treffer / glueck / link_kaputt / fehler
+- Regime-Historie
+- Prompt-Versionen
+
+Analyse:
+1. Kalibrierung: Sind "hoch"-Confidence-Empfehlungen auch wirklich treffsicher?
+2. Systematische Fehler (z.B. Uebergewichtung von Wachstum in Bull-Regime)
+3. Regime-Check: Hielt das Regime-Signal?
+4. Prompt-Diagnose: Wo haette ein Pflicht-Contra gefehlt?
+
+Harte Regel: Bei <15 Outcome-Datenpunkten: "Muster-Verdacht: X. Brauche noch
+N Datenpunkte." KEINE Aenderungsvorschlaege.
+
+Schlage max. 2 Aenderungen/Monat vor (Diff). Antwort als JSON:
+{
+  "befunde": [...],
+  "vorschlaege": [{"prompt": "P3", "aenderung": "...", "begruendung": "..."}],
+  "stichprobengroesse": N
+}

@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% block title %}Sparplan · Portfoliobot{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <p class="eyebrow">Tracking</p>
+  <h1 class="display">Sparplan</h1>
+  <p class="lede">Drei isolierte Tracks. Säulenverteilung wird live aus den Positionen aggregiert. Per-Sektion-Toggles mit localStorage-Stand.</p>
+</section>
+
+<div class="sparplan-toolbar">
+  <button type="button" data-collapse-all>Alle einklappen</button>
+  <button type="button" data-expand-all>Alle ausklappen</button>
+  <button type="button" data-reset-sparplan>Reset</button>
+  <span data-track-show-row></span>
+  <span class="muted small" data-custom-hint>Tipp: Klick auf den Sektion-Header zum Einklappen · − im Track-Header blendet den Track komplett aus.</span>
+</div>
+
+<div class="sparplan-grid" data-stagger-children>
+  {% for key, label, sub, data in [
+    ("claude",  "Claude",  "sparplan-tracking.json",          tracks.get("claude")),
+    ("mavis",   "Mavis",   "sparplan-tracking-mavis.json",    tracks.get("mavis")),
+    ("banker",  "Banker",  "sparplan-tracking-banker.json",   tracks.get("banker"))
+  ] %}
+    {% set saeulen = saeulen_map.get(key, {}) %}
+    <section class="track" data-track="{{ key }}">
+
+      <header class="track-head" data-section-toggle="{{ key }}-head" data-no-collapse>
+        <div class="track-titles">
+          <h2 class="h2">{{ label }}</h2>
+          <p class="track-sub mono">{{ sub }}</p>
+        </div>
+        <span class="track-meta">
+          {% if data is mapping and data.get('stand') %}
+            <p class="track-stand mono" title="letzter Tracker-Lauf">Stand {{ data['stand']|dt }}</p>
+          {% endif %}
+          <button type="button" class="track-hide-btn" data-track-hide="{{ key }}" aria-label="{{ label }} ausblenden" title="{{ label }} ausblenden">−</button>
+        </span>
+      </header>
+
+      {% if data is none %}
+        <p class="empty">Noch keine Daten vorhanden — Tracker ist noch nie gelaufen.</p>
+
+      {% elif data is mapping %}
+        {# --- KPI-Strip --- #}
+        {% set pos_count = data.get('positionen', []) | length if data.get('positionen') is iterable and data.get('positionen') is not string else 0 %}
+        <div class="track-section" data-section="{{ key }}-kpis">
+          <header class="section-toggle" data-section-toggle="{{ key }}-kpis">
+            <h3 class="track-h3">KPI</h3>
+            <span class="section-caret" aria-hidden="true">▾</span>
+          </header>
+          <div class="section-body">
+            <div class="track-kpis">
+              <div class="track-kpi">
+                <p class="kpi-label">Investiert</p>
+                <p class="kpi-value mono">{{ data.get('gesamt_investiert_eur', '—')|de_number(2) }} €</p>
+              </div>
+              <div class="track-kpi">
+                <p class="kpi-label">Wert</p>
+                <p class="kpi-value mono">{{ data.get('gesamt_wert_eur', '—')|de_number(2) }} €</p>
+              </div>
+              <div class="track-kpi">
+                <p class="kpi-label">Performance</p>
+                {% set p = data.get('gesamt_performance_pct') %}
+                <p class="kpi-value mono">
+                  {% if p is not none %}
+                    {% if p > 0 %}<span class="signed-pos">+{{ p|de_number(2) }} %</span>
+                    {% elif p < 0 %}<span class="signed-neg">{{ p|de_number(2) }} %</span>
+                    {% else %}{{ p|de_number(2) }} %{% endif %}
+                  {% else %}—{% endif %}
+                </p>
+              </div>
+              <div class="track-kpi">
+                <p class="kpi-label">Positionen</p>
+                <p class="kpi-value mono">{{ pos_count }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {# --- Saeulenverteilung (immer, fuer alle Tracks) --- #}
+        <div class="track-section" data-section="{{ key }}-saeulen">
+          <header class="section-toggle" data-section-toggle="{{ key }}-saeulen">
+            <h3 class="track-h3">Säulenverteilung</h3>
+            <span class="section-caret" aria-hidden="true">▾</span>
+          </header>
+          <div class="section-body">
+            {% if saeulen %}
+              {% set total = saeulen.values() | sum %}
+              <ul class="saeulen-list">
+                {% for sk, sv in saeulen.items() %}
+                  {% set pct = (sv / total * 100) if total else 0 %}
+                  <li>
+                    <span class="saeule-name">{{ sk }}</span>
+                    <span class="saeulen-bar"><span class="saeulen-fill" style="width: {{ '%g'|format(pct) }}%;"></span></span>
+                    <span class="saeule-val mono">{{ sv|de_number(2) }} € · {{ pct|de_number(0) }} %</span>
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="empty">Keine Säulen-Daten aggregierbar.</p>
+            {% endif %}
+          </div>
+        </div>
+
+        {# --- Track-spezifische Extras (nur fuer Nicht-Mavis-Tracks; bei Mavis
+               stoeren die "Dokumentation"-Bloecke die Lesbarkeit) --- #}
+        {% if key != 'mavis' and (data.get('empfehlung_label') or data.get('dokumentation')) %}
+          <div class="track-section" data-section="{{ key }}-extras">
+            <header class="section-toggle" data-section-toggle="{{ key }}-extras">
+              <h3 class="track-h3">Track-Details</h3>
+              <span class="section-caret" aria-hidden="true">▾</span>
+            </header>
+            <div class="section-body">
+              {% if data.get('empfehlung_label') %}
+                <p class="track-label mono">{{ data['empfehlung_label'] }}</p>
+              {% endif %}
+              {% if data.get('dokumentation') %}
+                <details class="track-details">
+                  <summary>Dokumentation</summary>
+                  <p>{{ data['dokumentation'] }}</p>
+                </details>
+              {% endif %}
+            </div>
+          </div>
+        {% endif %}
+
+        {# --- Positionen-Tabelle --- #}
+        {% set positionen = data.get('positionen', []) %}
+        <div class="track-section" data-section="{{ key }}-positionen">
+          <header class="section-toggle" data-section-toggle="{{ key }}-positionen">
+            <h3 class="track-h3">Positionen ({{ positionen|length }})</h3>
+            <span class="section-caret" aria-hidden="true">▾</span>
+          </header>
+          <div class="section-body">
+            {% if positionen %}
+              <div class="pos-table-wrap">
+                <table class="pos-table">
+                  <thead>
+                    <tr>
+                      <th>Ticker</th>
+                      <th>Säule</th>
+                      <th class="num">Kauf</th>
+                      <th class="num">Aktuell</th>
+                      <th class="num">%</th>
+                      <th class="num">EUR</th>
+                      <th class="num">Upside</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for p in positionen %}
+                      <tr>
+                        <td>
+                          <a href="{{ url_for('wissensdatenbank_ticker', ticker=p.get('ticker', '')) }}" class="link mono">{{ p.get('ticker', '—') }}</a>
+                          {# pos-these (Dokumentation) nur fuer Nicht-Mavis-Tracks #}
+                          {% if key != 'mavis' and p.get('these') %}<p class="pos-these">{{ p.these }}</p>{% endif %}
+                        </td>
+                        <td><span class="saeule-tag">{{ p.get('saeule', '—') }}</span></td>
+                        <td class="num mono">
+                          {% if p.get('kauf_kurs') is not none %}{{ p.kauf_kurs|de_number(2) }} {{ p.get('waehrung', '') }}{% else %}—{% endif %}
+                        </td>
+                        <td class="num mono">
+                          {% if p.get('aktueller_kurs') is not none %}{{ p.aktueller_kurs|de_number(2) }} {{ p.get('waehrung', '') }}{% else %}—{% endif %}
+                        </td>
+                        <td class="num mono">
+                          {% set perf = p.get('performance_pct') %}
+                          {% if perf is not none %}
+                            {% if perf > 0 %}<span class="signed-pos">+{{ perf|de_number(2) }}</span>
+                            {% elif perf < 0 %}<span class="signed-neg">{{ perf|de_number(2) }}</span>
+                            {% else %}{{ perf|de_number(2) }}{% endif %} %
+                          {% else %}—{% endif %}
+                        </td>
+                        <td class="num mono">{{ p.get('eur_investiert', '—')|de_number(2) }}</td>
+                        <td class="num mono">
+                          {% set up = p.get('abstand_zum_ziel_pct') %}
+                          {% if up is not none %}
+                            {% if up > 0 %}<span class="signed-pos">+{{ up|de_number(1) }} %</span>
+                            {% elif up < 0 %}<span class="signed-neg">{{ up|de_number(1) }} %</span>
+                            {% else %}{{ up|de_number(1) }} %{% endif %}
+                          {% else %}<span class="muted">—</span>{% endif %}
+                        </td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <p class="empty">Keine Positionen.</p>
+            {% endif %}
+          </div>
+        </div>
+
+      {% else %}
+        <pre class="code-block">{{ data|tojson(indent=2) }}</pre>
+      {% endif %}
+    </section>
+  {% endfor %}
+</div>
+{% endblock %}

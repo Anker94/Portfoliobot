@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Positionen · Portfoliobot{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <p class="eyebrow">Stand</p>
+  <h1 class="display">Positionen</h1>
+  <p class="lede">Real geführtes Depot links, Papier-Sandbox rechts — Daten aus <code>stock.db</code>.</p>
+</section>
+
+<div class="grid-2" data-stagger-children>
+  <section class="panel">
+    <header class="panel-head">
+      <h2 class="h2">Portfolio</h2>
+      <p class="panel-sub mono">{{ positionen|length }} aktive · Tabelle <code>positionen</code></p>
+    </header>
+    {% if positionen %}
+      <table class="table">
+        <thead>
+          <tr><th>Ticker</th><th class="num">Kauf</th><th class="num">Stk</th><th>These</th><th>Letzte Empf.</th></tr>
+        </thead>
+        <tbody>
+          {% for p in positionen %}
+            <tr>
+              <td class="mono">
+                <a href="{{ url_for('wissensdatenbank_ticker', ticker=p.ticker) }}" class="link">{{ p.ticker }}</a>
+              </td>
+              <td class="num mono">{{ p.kauf_kurs|usd }}</td>
+              <td class="num mono">{{ "%.3f"|format(p.stueckzahl or 0) }}</td>
+              <td class="muted">{{ p.these or "—" }}</td>
+              <td>
+                {% set rec = letzte_empfehlung.get(p.ticker) %}
+                {% if rec %}
+                  <span class="badge badge-{{ rec.typ|lower }}">{{ rec.typ }}</span>
+                  <span class="muted mono small">{{ rec.datum|dt }}</span>
+                {% else %}<span class="muted">—</span>{% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="empty">Keine aktiven Positionen in <code>positionen</code>.</p>
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <header class="panel-head">
+      <h2 class="h2">Papier-Depot</h2>
+      <p class="panel-sub mono">
+        {% if konto %}{{ konto.cash|usd }} Cash · {{ konto.provider }}{% else %}kein Konto{% endif %}
+      </p>
+    </header>
+    {% if paper_bestand %}
+      <table class="table">
+        <thead>
+          <tr><th>Ticker</th><th class="num">Stk</th><th class="num">⌀ Kurs</th><th>Aktualisiert</th></tr>
+        </thead>
+        <tbody>
+          {% for b in paper_bestand %}
+            <tr>
+              <td class="mono">
+                <a href="{{ url_for('wissensdatenbank_ticker', ticker=b.ticker) }}" class="link">{{ b.ticker }}</a>
+              </td>
+              <td class="num mono">{{ "%.3f"|format(b.stueckzahl or 0) }}</td>
+              <td class="num mono">{{ b.durchschnittskurs|usd }}</td>
+              <td class="muted mono small">{{ b.aktualisiert_am|dt }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="empty">Papier-Bestand leer.</p>
+    {% endif %}
+
+    <header class="panel-head panel-head-sub">
+      <h3 class="h3">Letzte Orders</h3>
+      <p class="panel-sub mono">Top {{ orders|length }} · Tabelle <code>orders</code></p>
+    </header>
+    {% if orders %}
+      <table class="table table-compact">
+        <thead>
+          <tr><th>#</th><th>Ticker</th><th>Seite</th><th class="num">Stk</th><th>Status</th><th>Erstellt</th></tr>
+        </thead>
+        <tbody>
+          {% for o in orders %}
+            <tr>
+              <td class="num mono">{{ o.id }}</td>
+              <td class="mono">{{ o.ticker }}</td>
+              <td><span class="badge badge-{{ o.seite|lower }}">{{ o.seite }}</span></td>
+              <td class="num mono">{{ "%.3f"|format(o.stueckzahl or 0) }}</td>
+              <td>
+                <span class="badge badge-{{ o.status }}">{{ o.status }}</span>
+              </td>
+              <td class="muted mono small">{{ o.erstellt_am|dt }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="empty">Keine Orders.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

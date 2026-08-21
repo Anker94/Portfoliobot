@@ -1,0 +1,33 @@
+# P3 — Spekulativ-Zweig (W3): statt RSI/MACD
+# Modell: wie P3. Fuer "Spekulative Wette"-Positionen.
+
+Analysiere die spekulative Position {ticker}. KEIN RSI/MACD (Rauschen auf
+illiquiden Titeln wie .V). Stattdessen:
+
+- Verwässerungs-Check: gibt es kuerzliche/angekuendigte Kapitalerhoehungen?
+- Meilenstein-Tracking: steht ein Bohr-/Studien-/Zulassungs-Meilenstein bevor?
+- Treiber-Status: ist der makro Treiber (z.B. Goldpreis, Seltene Erden) aktiv?
+- Positionsgroessen-Bewertung: ist die Position im Rahmen des Risiko-Budgets?
+
+Investment-These:
+{these}
+
+Gelieferte Fakten:
+{stock_block}
+Macro-Treiber: {driver_block}
+Regime: {regime_block}
+
+Antwort als JSON:
+{
+  "ticker": "...",
+  "these_check": "intakt | gefaehrdet | gebrochen",
+  "typ": "KAUFEN | AUFSTOCKEN | HALTEN | REDUZIEREN | VERKAUFEN",
+  "confidence": "hoch | mittel | niedrig",
+  "contra": ["...", "..."],
+  "verwasserungs_risiko": "hoch | mittel | niedrig",
+  "begruendung": "...",
+  "erwarteter_treiber": {"treiber": "...", "richtung": "..."},
+  "szenarien": [ {"name":"Bull","wahrscheinlichkeit":0.30,"kursziel_12m":...},
+                 {"name":"Base","wahrscheinlichkeit":0.50,"kursziel_12m":...},
+                 {"name":"Bear","wahrscheinlichkeit":0.20,"kursziel_12m":...} ]
+}

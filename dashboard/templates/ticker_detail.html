@@ -1,0 +1,320 @@
+{% extends "base.html" %}
+{% block title %}{{ ticker.ticker }} · Wissensdatenbank{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <p class="eyebrow mono">
+    <a href="{{ url_for('wissensdatenbank_index') }}" class="link">← Wissensdatenbank</a>
+  </p>
+  <h1 class="display mono">{{ ticker.ticker }}</h1>
+  <p class="lede mono">{{ ticker.filename }} · {{ ticker.size_kb }} KB · zuletzt geändert {{ ticker.modified }}</p>
+</section>
+
+{% if tv_symbol and tv_symbol.symbol %}
+{# Primary: TradingView embedded widget #}
+<section class="chart-section" data-stagger-children>
+  <header class="chart-header">
+    <h2 class="section-h">Kursverlauf</h2>
+    <div class="chart-meta-inline mono">
+      <span class="tv-source">TradingView · {{ tv_symbol.exchange }}:{{ tv_symbol.symbol.split(':')[-1] }}</span>
+      <a class="link link-sm mono" href="https://www.tradingview.com/chart/?symbol={{ tv_symbol.exchange }}%3A{{ tv_symbol.symbol.split(':')[-1] }}" target="_blank" rel="noopener">↗ TradingView öffnen</a>
+    </div>
+  </header>
+  <div class="tv-container" data-tv-theme>
+    <iframe
+      class="tv-iframe"
+      src="https://s.tradingview.com/widgetembed/?symbol={{ tv_symbol.exchange }}%3A{{ tv_symbol.symbol.split(':')[-1] }}&amp;interval=D&amp;hidesidetoolbar=0&amp;symboledit=1&amp;saveimage=0&amp;studies=%5B%5D&amp;theme=light&amp;style=1&amp;timezone=Etc%2FUTC&amp;withdateranges=1&amp;locale=de&amp;utm_source=localhost&amp;utm_medium=widget_new&amp;utm_campaign=chart"
+      title="TradingView Chart {{ tv_symbol.symbol }}"
+      loading="lazy"
+      allowfullscreen="true"
+      allowtransparency="true"
+      frameborder="0"
+    ></iframe>
+  </div>
+  <p class="chart-meta mono">15-Min-Delay · Live-Indikatoren + Drawing-Tools im Widget aktivierbar · Quelle TradingView</p>
+</section>
+{% elif chart_state and chart_state.ok %}
+{# Fallback: eigener Plotly-Chart wenn TV-Symbol nicht aufloesbar #}
+<section class="chart-section" data-stagger-children>
+  <header class="chart-header">
+    <h2 class="section-h">Kursverlauf (Plotly-Fallback)</h2>
+    <div class="chart-period-picker" role="tablist" aria-label="Zeitfenster wählen">
+      <button type="button" class="chart-period-btn" data-period="1m" role="tab" aria-selected="false">1M</button>
+      <button type="button" class="chart-period-btn" data-period="3m" role="tab" aria-selected="false">3M</button>
+      <button type="button" class="chart-period-btn" data-period="6m" role="tab" aria-selected="false">6M</button>
+      <button type="button" class="chart-period-btn" data-period="1y" role="tab" aria-selected="false">1Y</button>
+      <button type="button" class="chart-period-btn is-active" data-period="5y" role="tab" aria-selected="true">5Y</button>
+    </div>
+  </header>
+  <div id="ticker-chart" class="dd-chart-mount" data-market="{{ chart_state_json }}" data-bars="{{ chart_state.bars }}"></div>
+  <p class="chart-meta mono">
+    {{ chart_state.bars }} Bars · {{ chart_state.dates[0] }} → {{ chart_state.dates[-1] }}
+    · yfinance live · abgerufen {{ chart_state.fetched_at }}
+  </p>
+</section>
+{% elif chart_state and chart_state.error %}
+<section class="chart-section chart-section-error">
+  <header class="chart-header"><h2 class="section-h">Kursverlauf</h2></header>
+  <p class="empty">Kursdaten momentan nicht verfügbar — {{ chart_state.error }}</p>
+</section>
+{% endif %}
+
+<div class="ticker-layout">
+  <article class="md-content" data-stagger-children>
+    {{ ticker.html|safe }}
+  </article>
+
+  <aside class="kpi-aside" aria-label="Kennzahlen-Matrix">
+    <div class="kpi-aside-inner">
+
+      {% set v = ticker.valuation %}
+      {% set k = ticker.kpis %}
+      <div class="kpi-section">
+        <h2 class="kpi-h">Bewertungs-Score</h2>
+        {% if v.score is not none %}
+          <div class="scale" data-zone="{{ v.zone }}">
+            <div class="scale-bar" aria-hidden="true">
+              <div class="scale-zone scale-zone-bad"></div>
+              <div class="scale-zone scale-zone-warn"></div>
+              <div class="scale-zone scale-zone-fair"></div>
+              <div class="scale-zone scale-zone-good"></div>
+              <div class="scale-zone scale-zone-strong"></div>
+              <div class="scale-marker" style="left: {{ v.score }}%;">
+                <span class="scale-marker-label mono">{{ '%d' % v.score }}</span>
+              </div>
+            </div>
+            <div class="scale-legend">
+              <span>stark überteuert</span>
+              <span>fair</span>
+              <span>stark günstig</span>
+            </div>
+            <p class="scale-explain">
+              <span class="zone-pill zone-pill-{{ v.zone }}">{{ v.zone|zone_label }}</span>
+              <span class="confidence-pill confidence-pill-{{ v.confidence }}"
+                    title="Confidence basiert auf Anzahl verfügbarer Komponenten">
+                {{ {'insufficient':'insufficient','low':'low','medium':'medium','high':'high'}[v.confidence] }}
+              </span>
+              <span class="muted small">{{ v.components_available }}/4 Komponenten</span>
+            </p>
+          </div>
+        {% else %}
+          <p class="empty">Bewertungs-Score nicht berechenbar — zu wenig Daten im BEWERTUNG-Block.</p>
+        {% endif %}
+      </div>
+
+      {% set bs = ticker.banker_score %}
+      {% set bsc = ticker.banker_components or {} %}
+      <div class="kpi-section">
+        <h2 class="kpi-h">5-Banker-Score <span class="muted small">(1-10)</span></h2>
+        {% if bs is not none %}
+          <div class="banker-scale" data-zone="{{ bs|banker_zone_class }}">
+            <div class="banker-scale-bar" aria-hidden="true">
+              {% for n in range(1, 11) %}
+                <div class="banker-scale-tick" data-n="{{ n }}"></div>
+              {% endfor %}
+              <div class="banker-scale-marker" style="left: {{ (bs * 10)|round(0, 'floor') }}%;">
+                <span class="banker-scale-marker-label mono">{{ '%.1f' % bs }}</span>
+              </div>
+            </div>
+            <div class="banker-scale-legend">
+              <span>1</span>
+              <span>5</span>
+              <span>10</span>
+            </div>
+            <p class="scale-explain">
+              <span class="banker-pill banker-{{ bs|banker_zone_class }}">{{ ticker.banker_label }}</span>
+              <span class="muted small">
+                {% if ticker.banker_n_analysten %}
+                  {{ ticker.banker_n_analysten }} Analysten · rec: {{ ticker.banker_recommendation or 'n/a' }}
+                  {% if ticker.banker_upside_pct is not none %}· Upside {{ '%.1f' % ticker.banker_upside_pct }} %{% endif %}
+                {% else %}
+                  keine Detail-Daten
+                {% endif %}
+              </span>
+            </p>
+            {% if bsc %}
+            <ul class="banker-components">
+              <li><span>Value</span><span class="mono">{{ '%.1f' % bsc.value if bsc.value is not none else '—' }}</span></li>
+              <li><span>Qualität</span><span class="mono">{{ '%.1f' % bsc.qualitaet if bsc.qualitaet is not none else '—' }}</span></li>
+              <li><span>Technik</span><span class="mono">{{ '%.1f' % bsc.technik if bsc.technik is not none else '—' }}</span></li>
+              <li><span>Risiko</span><span class="mono">{{ '%.1f' % bsc.risiko if bsc.risiko is not none else '—' }}</span></li>
+              <li><span>Konsens</span><span class="mono">{{ bsc.analysten_konsens if bsc.analysten_konsens is not none else '—' }}</span></li>
+              <li><span>Smart-Money</span><span class="mono">{{ '%.1f' % bsc.smart_money if bsc.smart_money is not none else '—' }}</span></li>
+            </ul>
+            {% endif %}
+            {% if ticker.banker_smart_money_institutionen %}
+            <p class="muted small banker-smart-money">
+              13F-gehalten von: {{ ticker.banker_smart_money_institutionen|join(', ') }}
+            </p>
+            {% endif %}
+            {% if ticker.banker_dcf_warnung %}
+            <p class="callout-warn small">
+              <strong>DCF-Warnung:</strong> {{ ticker.banker_dcf_warnung }}
+            </p>
+            {% endif %}
+            {% if ticker.banker_stand %}
+            <p class="muted small banker-stand">Datenstand: <span class="mono">{{ ticker.banker_stand[:10] }}</span></p>
+            {% if ticker.banker_stale and ticker.banker_stale.is_stale %}
+              <div class="stale-banner stale-banner--warning" role="status">
+                <strong>⚠ Banker-Score veraltet:</strong>
+                {% if ticker.banker_stale.reason == "no_stand" %}
+                  kein Datenstand bekannt.
+                {% else %}
+                  letzte Aktualisierung vor {{ ticker.banker_stale.days }} Tagen
+                  (Schwelle {{ ticker.banker_stale.threshold }} Tage).
+                {% endif %}
+              </div>
+            {% endif %}
+            {% endif %}
+          </div>
+        {% else %}
+          <p class="empty">5-Banker-Score nicht verfügbar — <code>data/banker_council_latest.json</code> fehlt oder enthält diesen Ticker nicht.</p>
+        {% endif %}
+      </div>
+      </div>
+
+      <div class="kpi-section">
+        <h2 class="kpi-h">Kennzahlen</h2>
+        <table class="kpi-table">
+          <tbody>
+            <tr><th>Kurs</th><td class="num mono">{{ k.kurs|de_number(2) }} USD</td></tr>
+            <tr><th>Marktkap.</th><td class="num mono">{{ k.mc_bio|bio_usd }}</td></tr>
+            <tr><th>52W-Range</th><td class="num mono">
+              {% if k['52w_low'] is not none and k['52w_high'] is not none %}
+                {{ k['52w_low']|de_number(2) }} – {{ k['52w_high']|de_number(2) }} USD
+              {% else %}—{% endif %}
+            </td></tr>
+            <tr><th>52W-Position</th><td class="num mono">{% if k['52w_position_pct'] is not none %}{{ k['52w_position_pct']|de_number(0) }} %{% else %}—{% endif %}</td></tr>
+            <tr><th>KGV ttm</th><td class="num mono">{% if k.kgv_trailing is not none %}{{ k.kgv_trailing|de_number(2) }}{% else %}—{% endif %}</td></tr>
+            <tr><th>KGV fwd</th><td class="num mono">{% if k.kgv_forward is not none %}{{ k.kgv_forward|de_number(2) }}{% else %}—{% endif %}</td></tr>
+            <tr><th>PEG</th><td class="num mono">{% if k.peg is not none %}{{ k.peg|de_number(2) }}{% else %}—{% endif %}</td></tr>
+            <tr><th>Beta</th><td class="num mono">{% if k.beta is not none %}{{ k.beta|de_number(2) }}{% else %}—{% endif %}</td></tr>
+            <tr><th>Konsens</th><td>
+              {% if k.consensus %}
+                <span class="badge badge-{{ k.consensus|lower|replace(' ', '-') }}">{{ k.consensus }}</span>
+                {% if k.konsens_basis %}<span class="muted small"> · {{ k.konsens_basis }} Analysten</span>{% endif %}
+              {% else %}<span class="muted">—</span>{% endif %}
+            </td></tr>
+            <tr><th>Kursziel</th><td class="num mono">{% if k.pt is not none %}{{ k.pt|de_number(2) }} USD{% else %}—{% endif %}</td></tr>
+            <tr>
+              <th>Upside</th>
+              {% set u = k.upside_pct|signed_pct %}
+              <td class="num mono"><span class="signed-{{ u[1] }}">{{ u[0] }}</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      {% if v.components %}
+      <div class="kpi-section">
+        <h2 class="kpi-h">Score-Komponenten</h2>
+        <ul class="components">
+          {% for name, val in v.components.items() %}
+            <li>
+              <span class="components-label">{{ {'52w': '52W-Position', 'peg': 'PEG', 'kgv': 'KGV fwd', 'upside': 'Upside'}.get(name, name) }}</span>
+              <span class="components-bar"><span class="components-fill" style="width: {{ val }}%;"></span></span>
+              <span class="components-val mono">{{ '%d'|format(val) }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+        <p class="muted small">Score 0 = stark überteuert · 100 = stark günstig. Skala: 52W-Position (niedrig% = bullish), PEG (≤1 = bullish, >2 = bearish), KGV fwd (≤15 = bullish, >40 = bearish), Upside zum Konsens-PT.</p>
+      </div>
+      {% endif %}
+
+    </div>
+  </aside>
+</div>
+
+{% if chart_state and chart_state.ok and not (tv_symbol and tv_symbol.symbol) %}
+<!-- Plotly (CDN) + Ticker-Chart-Logik (nur im Fallback-Pfad geladen) -->
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+<script>
+  (function() {
+    var mount = document.getElementById('ticker-chart');
+    if (!mount) return;
+    var raw = mount.getAttribute('data-market');
+    var state;
+    try { state = JSON.parse(raw); } catch (e) { return; }
+    if (!state || !state.ok) return;
+
+    var dates = state.dates;
+    var o = state.ohlc;
+    var ind = state.indicators;
+
+    // Layout-Defaults (werden bei resize neu gesetzt)
+    var baseLayout = {
+      autosize: true,
+      margin: { l: 50, r: 20, t: 20, b: 40 },
+      paper_bgcolor: 'rgba(0,0,0,0)',
+      plot_bgcolor: 'rgba(0,0,0,0)',
+      xaxis: { rangeslider: { visible: false }, type: 'date', gridcolor: 'rgba(127,140,141,0.15)' },
+      yaxis: { title: 'Kurs', gridcolor: 'rgba(127,140,141,0.15)', side: 'left' },
+      yaxis2: { title: 'Volumen', overlaying: 'y', side: 'right', showgrid: false, type: 'log' },
+      legend: { orientation: 'h', x: 0, y: 1.08 },
+      hovermode: 'x unified',
+      font: { family: 'Inter, system-ui, sans-serif' }
+    };
+
+    var config = { responsive: true, displaylogo: false, modeBarButtonsToRemove: ['lasso2d','select2d'] };
+
+    function buildTraces(sliceStart) {
+      var x = dates.slice(sliceStart);
+      var traceDates = o.open.slice(sliceStart); // gleiche length wie OHLC
+      var candle = {
+        type: 'candlestick', x: x,
+        open: o.open.slice(sliceStart),
+        high: o.high.slice(sliceStart),
+        low: o.low.slice(sliceStart),
+        close: o.close.slice(sliceStart),
+        name: 'OHLC',
+        increasing: { line: { color: '#16a085' } },
+        decreasing: { line: { color: '#c0392b' } },
+        showlegend: false, hoverinfo: 'x+y'
+      };
+      var ma20 = { type: 'scatter', mode: 'lines', x: x, y: ind.ma20.slice(sliceStart), name: 'MA20', line: { color: '#3498db', width: 1.2 } };
+      var ma50 = { type: 'scatter', mode: 'lines', x: x, y: ind.ma50.slice(sliceStart), name: 'MA50', line: { color: '#e67e22', width: 1.2 } };
+      var ma200 = { type: 'scatter', mode: 'lines', x: x, y: ind.ma200.slice(sliceStart), name: 'MA200', line: { color: '#9b59b6', width: 1.2 } };
+      var vol = {
+        type: 'bar', x: x, y: o.volume.slice(sliceStart), name: 'Volumen',
+        marker: { color: 'rgba(127,140,141,0.35)' },
+        yaxis: 'y2', showlegend: false, hoverinfo: 'x+y'
+      };
+      return [candle, ma20, ma50, ma200, vol];
+    }
+
+    // initiale Periode: 5y (volle daten)
+    var totalBars = state.bars;
+    function periodToSliceStart(period) {
+      if (!period || period === '5y') return 0;
+      // ungefaehre trading-days pro periode
+      var days = { '1m': 21, '3m': 63, '6m': 126, '1y': 252 };
+      var n = days[period] || totalBars;
+      return Math.max(0, totalBars - n);
+    }
+
+    Plotly.newPlot('ticker-chart', buildTraces(0), baseLayout, config);
+
+    // Period-Picker-Handler (event delegation)
+    var picker = document.querySelector('.chart-period-picker');
+    if (picker) {
+      picker.addEventListener('click', function(ev) {
+        var btn = ev.target.closest('.chart-period-btn');
+        if (!btn) return;
+        var period = btn.getAttribute('data-period');
+        if (!period) return;
+        // active toggle
+        picker.querySelectorAll('.chart-period-btn').forEach(function(b) {
+          b.classList.toggle('is-active', b === btn);
+          b.setAttribute('aria-selected', b === btn ? 'true' : 'false');
+        });
+        // trace update (kein re-render, schneller)
+        var sliceStart = periodToSliceStart(period);
+        var traces = buildTraces(sliceStart);
+        Plotly.purge('ticker-chart');
+        Plotly.newPlot('ticker-chart', traces, baseLayout, config);
+      });
+    }
+  })();
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,43 @@
+# P3 — Einzelaktien-Empfehlung (woechentlich)
+# Modell: Claude Sonnet 4.6 (hier: tencent/hy3:free). Kern-Analyse.
+
+Analysiere die Position {ticker} und gib eine Empfehlung.
+
+Investment-These des Investors:
+{these}
+
+Gelieferte Fakten (Code berechnet, nicht von dir gezogen):
+- Kurs / RSI / SMA50 / SMA200 / MACD / ATR / 52w-Range
+- Performance 1m/3m/6m
+{stock_block}
+- Macro-Treiber: {driver_block}
+- Letzte Empfehlung: {last_rec_block}
+- Regime-Kontext: {regime_block}
+- Short-Interest (E3): {short_block}
+
+Pflicht-Struktur (JSON), exakt diese Felder:
+{
+  "ticker": "...",
+  "these_check": "intakt | gefaehrdet | gebrochen",
+  "typ": "KAUFEN | AUFSTOCKEN | HALTEN | REDUZIEREN | VERKAUFEN",
+  "confidence": "hoch | mittel | niedrig",
+  "contra": ["...", "..."],            # min. 2 Gegengruende (Guardrail 1)
+  "begruendung": "...",
+  "erwarteter_treiber": {"treiber": "<^TNX o.ae.>", "richtung": "fallend"},  # E6
+  "szenarien": [                        # E5 (Pflicht: Wahrscheinlichkeiten summieren auf 1.0)
+    # WICHTIG: kursziel_12m sind ECHTE 12-Monats-Kursziele in USD, realistisch
+    # relativ zum AKTUELLEN KURS aus stock_block (typisch Bereich -50% bis +150%).
+    # NICHT die Beispielzahlen uebernehmen! Beispiel bei Kurs ~100:
+    {"name": "Bull", "wahrscheinlichkeit": 0.30, "kursziel_12m": 130},
+    {"name": "Base", "wahrscheinlichkeit": 0.50, "kursziel_12m": 100},
+    {"name": "Bear", "wahrscheinlichkeit": 0.20, "kursziel_12m": 70}
+  ]
+}
+
+Regeln:
+- these_check == "gebrochen" -> typ MUSS VERKAUFEN/REDUZIEREN sein (Guardrail 2).
+- Szenarien-Wahrscheinlichkeiten muessen auf 1.0 summieren. Bear-Szenario
+  zwingend (Pflicht-Contra quantifiziert).
+- Kein Verbilligen (Guardrail 7): fallender Kurs + gleiche These = nicht automatisch
+  AUFSTOCKEN.
+- Nur gelieferte Daten (Guardrail 5).

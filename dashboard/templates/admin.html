@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+{% block title %}Admin · Portfoliobot{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <p class="eyebrow">Lokal</p>
+  <h1 class="display">Admin-Konsole</h1>
+  <p class="lede">Manuelle Trigger für Hermes-Skripte. Jeder Button startet das jeweilige Skript als Subprozess und meldet Status + Output zurück.</p>
+</section>
+
+{% if flashes %}
+  {% for category, message in flashes %}
+    <div class="banner {{ 'banner-ok' if category == 'ok' else 'banner-warn' }}" role="status">
+      <strong>{{ 'OK' if category == 'ok' else 'Fehler' }}:</strong>
+      <pre class="mono">{{ message }}</pre>
+    </div>
+  {% endfor %}
+{% endif %}
+
+<section class="section">
+  <header class="section-head">
+    <h2 class="h2">Refresh &amp; Schreib-Jobs</h2>
+    <p class="muted">Schreiben in <code>stock.db</code>, <code>sparplan-tracking*.json</code> oder Wiki-Markdown. Idempotent, mit Git reversibel.</p>
+  </header>
+
+  <div class="admin-grid">
+    {% for job_id, cfg in jobs.items() %}
+      {% if cfg.risk in ("write",) %}
+      <article class="admin-card" data-risk="{{ cfg.risk }}">
+        <header class="admin-card-head">
+          <h3 class="h3">{{ cfg.label }}</h3>
+          <span class="risk-badge risk-{{ cfg.risk }}">{{ cfg.risk }}</span>
+        </header>
+        <p class="muted">{{ cfg.desc }}</p>
+        <dl class="kv">
+          <dt>Skript</dt>
+          <dd><code>scripts/{{ cfg.script }}</code></dd>
+          {% if cfg.args %}
+          <dt>Args</dt>
+          <dd><code>{{ cfg.args | join(' ') }}</code></dd>
+          {% endif %}
+          <dt>Timeout</dt>
+          <dd>{{ cfg.timeout }}s</dd>
+        </dl>
+        <form method="post" action="{{ url_for('admin_run', job_id=job_id) }}" class="inline-form">
+          <button type="submit" class="btn btn-primary">Jetzt ausführen</button>
+        </form>
+      </article>
+      {% endif %}
+    {% endfor %}
+  </div>
+</section>
+
+<section class="section">
+  <header class="section-head">
+    <h2 class="h2">Read-Only-Analyse</h2>
+    <p class="muted">Liefert Reports ohne Daten zu schreiben. Sicher für häufiges Auslösen.</p>
+  </header>
+
+  <div class="admin-grid">
+    {% for job_id, cfg in jobs.items() %}
+      {% if cfg.risk == "read" %}
+      <article class="admin-card" data-risk="{{ cfg.risk }}" data-async="{{ 'true' if cfg.get('async') else 'false' }}" data-job-id="{{ job_id }}" data-timeout="{{ cfg.timeout }}">
+        <header class="admin-card-head">
+          <h3 class="h3">{{ cfg.label }}</h3>
+          <span class="risk-badge risk-{{ cfg.risk }}">{{ cfg.risk }}</span>
+          {% if cfg.get('async') %}<span class="risk-badge risk-async">async</span>{% endif %}
+        </header>
+        <p class="muted">{{ cfg.desc }}</p>
+        <dl class="kv">
+          <dt>Skript</dt>
+          <dd><code>scripts/{{ cfg.script }}</code></dd>
+          {% if cfg.args %}
+          <dt>Args</dt>
+          <dd><code>{{ cfg.args | join(' ') }}</code></dd>
+          {% endif %}
+          <dt>Timeout</dt>
+          <dd>{{ cfg.timeout }}s</dd>
+        </dl>
+        <form method="post" action="{{ url_for('admin_run', job_id=job_id) }}" class="inline-form">
+          <button type="submit" class="btn btn-primary">Jetzt ausführen</button>
+        </form>
+        {% if cfg.get('async') %}
+        <div class="job-status" id="job-status-{{ job_id }}" data-state="idle">
+          <div class="job-status-header">
+            <span class="job-status-state">idle</span>
+            <span class="job-status-elapsed mono"></span>
+          </div>
+          <pre class="job-status-output mono"></pre>
+        </div>
+        {% endif %}
+      </article>
+      {% endif %}
+    {% endfor %}
+  </div>
+</section>
+
+<section class="section">
+  <header class="section-head">
+    <h2 class="h2">Kauf-Vorschau</h2>
+    <p class="muted">Trockenlauf für Wochenkäufe. Schreibt nichts — nur Anzeige. Echter Kauf läuft über Hermes' <code>portfolio_woche_mavis.py</code> ohne <code>--dry-run</code>.</p>
+  </header>
+
+  <div class="admin-grid">
+    {% for job_id, cfg in jobs.items() %}
+      {% if cfg.risk == "buy" %}
+      <article class="admin-card" data-risk="{{ cfg.risk }}">
+        <header class="admin-card-head">
+          <h3 class="h3">{{ cfg.label }}</h3>
+          <span class="risk-badge risk-{{ cfg.risk }}">{{ cfg.risk }}</span>
+        </header>
+        <p class="muted">{{ cfg.desc }}</p>
+        <dl class="kv">
+          <dt>Skript</dt>
+          <dd><code>scripts/{{ cfg.script }}</code></dd>
+          {% if cfg.args %}
+          <dt>Args</dt>
+          <dd><code>{{ cfg.args | join(' ') }}</code></dd>
+          {% endif %}
+          <dt>Timeout</dt>
+          <dd>{{ cfg.timeout }}s</dd>
+        </dl>
+        <form method="post" action="{{ url_for('admin_run', job_id=job_id) }}" class="inline-form">
+          <button type="submit" class="btn btn-primary">Jetzt ausführen</button>
+        </form>
+      </article>
+      {% endif %}
+    {% endfor %}
+  </div>
+</section>
+
+<section class="section">
+  <header class="section-head"><h2 class="h2">Hintergrund</h2></header>
+  <ul class="src-list">
+    <li>Python-Interpreter: <code>{{ "..." }}</code> (ueberschreibbar via <code>PORTFOLIOBOT_PYTHON</code> env var, default <code>sys.executable</code>)</li>
+    <li>Skripte: <code>scripts/</code> (eines pro Job, Parameter via <code>HERMES_JOBS</code> in <code>lib/portfolio_helpers.py</code>)</li>
+    <li>Risiko-Legende: <span class="risk-badge risk-read">read</span> = nur lesen · <span class="risk-badge risk-write">write</span> = schreibt in DB/JSON/MD · <span class="risk-badge risk-buy">buy</span> = Trockenlauf, kein echter Kauf</li>
+    <li>Output-Limit pro Job: 400 Zeichen stdout + 400 Zeichen stderr (im Banner)</li>
+    <li>Logs: <code>data/markt_refresh.log</code> für Refresh-Jobs, <code>trigger_log.json</code> für Trigger</li>
+  </ul>
+</section>
+
+<script>
+(function() {
+  // Live-Status-Polling fuer async-Jobs (z.B. trigger_check_wiki).
+  // Bei Seitenladen: pruefe fuer jede async-Card, ob der Job laeuft oder
+  // kuerzlich gelaufen ist; starte Polling-Loop entsprechend.
+
+  var POLL_INTERVAL_MS = 2000;
+  var activeJobs = {};  // {jobId: intervalId}
+
+  function fmtElapsed(s) {
+    if (s == null) return "";
+    if (s < 60) return s + "s";
+    var m = Math.floor(s / 60);
+    var sec = Math.floor(s % 60);
+    if (m < 60) return m + "m " + sec + "s";
+    var h = Math.floor(m / 60);
+    return h + "h " + (m % 60) + "m";
+  }
+
+  function renderStatus(card, st) {
+    var box = card.querySelector(".job-status");
+    if (!box) return;
+    var stateEl = box.querySelector(".job-status-state");
+    var elapsedEl = box.querySelector(".job-status-elapsed");
+    var outEl = box.querySelector(".job-status-output");
+    box.dataset.state = st.state || "idle";
+    stateEl.textContent = st.state || "idle";
+    if (st.state === "running") {
+      elapsedEl.textContent = fmtElapsed(st.elapsed_s) + " / timeout " + (card.dataset.timeout || "?") + "s";
+    } else if (st.state === "done" || st.state === "error") {
+      elapsedEl.textContent = "rc=" + (st.returncode != null ? st.returncode : "?") + ", " + fmtElapsed(st.duration_s);
+    } else {
+      elapsedEl.textContent = "";
+    }
+    var out = (st.stdout_tail || "") + (st.stderr_tail ? "\n[stderr]\n" + st.stderr_tail : "");
+    outEl.textContent = out || "(noch kein Output)";
+  }
+
+  function pollOnce(card) {
+    var jobId = card.dataset.jobId;
+    fetch("/admin/status/" + encodeURIComponent(jobId), {cache: "no-store"})
+      .then(function(r) { return r.json(); })
+      .then(function(st) {
+        renderStatus(card, st);
+        if (st.state === "running") {
+          if (!activeJobs[jobId]) {
+            activeJobs[jobId] = setInterval(function() { pollOnce(card); }, POLL_INTERVAL_MS);
+          }
+        } else if (st.state === "done" || st.state === "error") {
+          if (activeJobs[jobId]) {
+            clearInterval(activeJobs[jobId]);
+            delete activeJobs[jobId];
+          }
+        }
+      })
+      .catch(function(err) {
+        // Bei Fehler: Polling beenden, Status-Box rot
+        var box = card.querySelector(".job-status");
+        if (box) {
+          box.dataset.state = "error";
+          box.querySelector(".job-status-state").textContent = "poll-fehler";
+          box.querySelector(".job-status-output").textContent = String(err);
+        }
+        if (activeJobs[jobId]) {
+          clearInterval(activeJobs[jobId]);
+          delete activeJobs[jobId];
+        }
+      });
+  }
+
+  // Beim Laden: alle async-Cards initial pollen (zeigt letzte Run-Resultate)
+  document.querySelectorAll(".admin-card[data-async='true']").forEach(function(card) {
+    pollOnce(card);
+  });
+
+  // Globaler Hook fuer Flash-Banner nach Job-Start: Banner sagt "pollt automatisch",
+  // wir starten das Polling dann auch ohne Reload
+  // (POST-redirect GET -> wir sind schon auf /admin, Banner ist da, Cards existieren)
+  // -> pollOnce wird oben bereits einmal gerufen, das reicht.
+})();
+</script>
+{% endblock %}

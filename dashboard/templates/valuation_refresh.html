@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Preise + Bewertung aktualisieren · Portfoliobot{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <p class="eyebrow">Lokal</p>
+  <h1 class="display">Preise + Bewertung aktualisieren</h1>
+  <p class="lede">Holt yfinance-Snapshots für alle 234 Wiki-Ticker, schreibt den <code>## LIVE-DATA</code>-Block (Preise + KGV/PEG/P/S/EV-Rev/EV-EBITDA) in jede <code>.md</code>-Datei und aktualisiert den Live-Score im <code>BEWERTUNG</code>-Block. Preise und Score sind hier gekoppelt: der Score liest aus <code>LIVE-DATA</code>, deshalb gibt es nur diesen einen Refresh-Knopf für die ganze Watchlist. Überschreibt alte Werte idempotent.</p>
+</section>
+
+<section class="section">
+  <header class="section-head">
+    <h2 class="h2">Aktion</h2>
+  </header>
+
+  {% if flashes %}
+    {% for category, message in flashes %}
+      <div class="banner {{ 'banner-ok' if category == 'ok' else 'banner-warn' }}" role="status">
+        <strong>{{ 'OK' if category == 'ok' else 'Fehler' }}:</strong>
+        <pre class="mono">{{ message }}</pre>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <form method="post" action="{{ url_for('valuation_refresh') }}" class="inline-form">
+    <button type="submit" class="btn btn-primary">Jetzt Preise + Bewertung aktualisieren</button>
+  </form>
+  <p class="hint"><small>Alias-Endpoint: <code>POST /prices/refresh</code> ruft denselben Job auf.</small></p>
+</section>
+
+<section class="section">
+  <header class="section-head"><h2 class="h2">Hintergrund</h2></header>
+  <ul class="src-list">
+    <li>Skript: <code>scripts/valuation_refresh.py --apply</code></li>
+    <li>Quelle: yfinance via Projekt-Venv <code>.venv311</code></li>
+    <li>Ziel: <code>wissensdatenbank/aktien/*.md</code></li>
+    <li>Log: <code>data/markt_refresh.log</code></li>
+  </ul>
+</section>
+{% endblock %}

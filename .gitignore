@@ -1,0 +1,63 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# OS / Temp
+*.tmp
+*.bak
+*~
+
+# Lokale Konfiguration (enthaelt API-Keys, darf nicht ins Repo)
+config/config.json
+
+# Datenbank und Caches (lokal, jederzeit reproduzierbar)
+data/stock.db
+data/stock.db-journal
+data/stock.db-wal
+data/stock.db-shm
+data/*.json
+data/13f_history/
+data/sec_cache/
+data/financials_cache.json
+data/banker_council_latest.json
+data/markt_refresh.log
+data/tagesform.log
+
+# Sparplan-Tracker (privat, jeder Nutzer richtet sich seine eigene Datei ein)
+data/sparplan-tracking.json
+data/sparplan-tracking-mavis.json
+data/sparplan-tracking-banker.json
+data/sparplan_aktivierungsliste_rerun.json
+
+# Trigger-Logs
+data/trigger_log.json
+data/trigger_wb_results.json
+
+# Dashboard-Runtime-Logs
+dashboard/stdout.log
+dashboard/stderr.log
+dashboard/watchdog.log
+
+# Skript-Runtime-Output (z.B. scripts/data/)
+scripts/data/
+
+# Working-Notes (nicht versionieren)
+quality_review_results.json

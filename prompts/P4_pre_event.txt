@@ -1,0 +1,24 @@
+# P4 — Pre-Event (vor Earnings)
+# Modell: wie P3. Konkrete Szenarien, nicht "abwarten".
+
+Event: {ticker} Earnings am {event_datum} ({bmo_amc}).
+
+Gelieferte Fakten:
+- Implied Move (E2): {implied_block}
+- Historische Earnings-Moves (E2): {hist_block}
+- Aktuelle Indikatoren: {stock_block}
+- Short-Interest (E3): {short_block}
+- Macro-Treiber: {driver_block}
+
+Liefere KONKRETE Szenarien:
+{
+  "ticker": "...",
+  "erwartung": "pre-event",
+  "szenario_gut": "Was bei Beat+guidance-raise passiert (Kurs, Reaktion)",
+  "szenario_schlecht": "Was bei Miss passiert",
+  "szenario_ueberraschung": "Schlupf, das der Markt uebersieht",
+  "empfehlung": "KAUFEN | HALTEN | REDUZIEREN (vor Event)",
+  "contra": ["...", "..."],
+  "begruendung": "..."
+}
+Beziehe dich auf die echten Implied-Move-Zahlen. Pflicht-Contra (Guardrail 1).

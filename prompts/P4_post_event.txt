@@ -1,0 +1,24 @@
+# P4 — Post-Event (nach Earnings)
+# Modell: wie P3. Exit-Kriterien-Check ist bindend.
+
+Event: {ticker} Earnings am {event_datum} ({bmo_amc}) ist VORBEI.
+Tatsaechlicher Move seit Event: {actual_move_block}
+
+Gelieferte Fakten:
+- Indikatoren nach Event: {stock_block}
+- Macro-Treiber: {driver_block}
+
+Pruefe die hinterlegten Exit-Kriterien der These:
+{exit_kriterien}
+
+Pflicht-Regel: Wenn EIN Exit-Kriterium erfuellt ist, MUSS die Empfehlung
+VERKAUFEN lauten (Post-Event bindend).
+
+{
+  "ticker": "...",
+  "erwartung": "post-event",
+  "exit_kriterium_erfuellt": true|false,
+  "typ": "KAUFEN | AUFSTOCKEN | HALTEN | REDUZIEREN | VERKAUFEN",
+  "contra": ["...", "..."],
+  "begruendung": "..."
+}

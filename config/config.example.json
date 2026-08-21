@@ -1,0 +1,29 @@
+{
+  "_hinweis": "Vorlage. Kopieren nach config/config.json (nicht versioniert) und Geheimnisse dort eintragen.",
+  "db_path": "data/stock.db",
+  "llm": {
+    "provider": "mock",
+    "base_url": "https://inference-api.nousresearch.com/v1",
+    "api_key": "",
+    "models": {
+      "P1": "tencent/hy3:free",
+      "P2": "tencent/hy3:free",
+      "P3": "tencent/hy3:free",
+      "P4": "tencent/hy3:free",
+      "P5": "tencent/hy3:free",
+      "P7": "tencent/hy3:free",
+      "advocate": "tencent/hy3:free"
+    }
+  },
+  "telegram": { "bot_token": "", "chat_id": "" },
+  "finnhub_api_key": "",
+  "guardrails": { "positions_deckel": 0.10 },
+  "broker": {
+    "_hinweis": "provider 'paper' = Offline-Simulator (Default, kein Key noetig). 'alpaca_paper' = Alpaca Paper-Trading. Live-Endpunkte sind in lib/broker.py hart gesperrt, nicht konfigurierbar.",
+    "provider": "paper",
+    "startkapital": 100000,
+    "waehrung": "USD",
+    "key_id": "",
+    "api_secret": ""
+  }
+}

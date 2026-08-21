@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Trigger-Log · Portfoliobot{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <p class="eyebrow">Historie</p>
+  <h1 class="display">Trigger-Log</h1>
+  <p class="lede">{{ total }} Einträge gesamt · zeige die jüngsten {{ entries|length }}.</p>
+</section>
+
+{% if entries %}
+  <ul class="trigger-list trigger-list-full" data-stagger-children>
+    {% for tr in entries %}
+      <li class="trigger trigger-card">
+        <div class="trigger-side">
+          <span class="badge badge-{{ tr.ausloesung }}">{{ tr.ausloesung|upper }}</span>
+        </div>
+        <div class="trigger-body">
+          <p class="trigger-ticker">{{ tr.ticker }}</p>
+          <p class="trigger-stand mono">{{ tr.stand|dt }}</p>
+          {% set em = tr.details.entscheidung %}
+          {% if em %}
+            {% if em.buy_trigger_fired and em.buy_trigger_grund %}
+              <p class="trigger-grund">{{ em.buy_trigger_grund }}</p>
+            {% elif em.sell_trigger_fired and em.sell_trigger_grund %}
+              <p class="trigger-grund">{{ em.sell_trigger_grund }}</p>
+            {% endif %}
+          {% endif %}
+        </div>
+        <div class="trigger-tail mono">
+          {% set em = tr.details.entscheidung %}
+          {% if em and em.buy_trigger_fired %}<span class="bullet bullet-on"></span> BUY
+          {% elif em and em.sell_trigger_fired %}<span class="bullet bullet-on"></span> SELL
+          {% else %}<span class="bullet bullet-off"></span> kein Feuer{% endif %}
+          <p class="trigger-action">
+            <a class="link mono" href="{{ url_for('deepdive', ticker=tr.ticker) }}" title="Deep-Dive fuer {{ tr.ticker }}">Deep-Dive →</a>
+          </p>
+        </div>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p class="empty">Noch kein Trigger-Log vorhanden.</p>
+{% endif %}
+{% endblock %}

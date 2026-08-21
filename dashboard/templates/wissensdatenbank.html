@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}Wissensdatenbank · Portfoliobot{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <p class="eyebrow">Markt</p>
+  <h1 class="display">Wissensdatenbank</h1>
+  <p class="lede">{{ ticker_files|length }} Ticker sichtbar · sortiert nach <strong>{{ {'score':'Bewertungs-Score','ticker':'Ticker','company':'Unternehmen','size':'Größe','date':'Datum'}[sort] }}</strong> · {{ view == 'list' and 'Listen-' or 'Kachel-' }}Ansicht.</p>
+</section>
+
+{% if missing_ticker %}
+  <aside class="banner banner-warn" role="status">
+    <strong>Eintrag fehlt:</strong> <code>{{ missing_ticker }}.md</code> ist nicht im Wissensdatenbank-Ordner.
+  </aside>
+{% endif %}
+
+<aside class="callout callout-info" role="status">
+  <strong>Bewertungs-Score (heuristisch):</strong> relative Bewertungs-Attraktivität
+  aus bis zu vier Komponenten (52W-Position, PEG, KGV, Upside). Nicht empirisch
+  gegen spätere Renditen kalibriert. Die <strong>Confidence</strong> zeigt, wie
+  viele Komponenten verfügbar sind: high = 4, medium = 3, low = 2, insufficient = 0–1.
+  Filter &bdquo;Mindest-Confidence&ldquo; unten erlaubt das Ausblenden schwach
+  datierter Aktien.
+  {% if banker_stand %}<br><br><strong>Banker-Score (1-10):</strong> separater Methodik-Score aus
+  5-Banker-Konsens (Valuation, Qualität, Technik, Risiko, Analysten-Konsens + Smart-Money-Faktor).
+  Skala 1-10 = <code>score_gesamt / 10</code> aus
+  <code>scripts/banker_council.py</code>. Datenstand: <span class="mono">{{ banker_stand[:10] }}</span>.
+  {% if banker_stale and banker_stale.is_stale %}
+    <div class="stale-banner stale-banner--warning" role="status">
+      <strong>⚠ Banker-Score veraltet:</strong>
+      {% if banker_stale.reason == "no_stand" %}
+        kein Datenstand bekannt — bitte <code>scripts/banker_council.py</code> neu laufen lassen.
+      {% else %}
+        letzte Aktualisierung vor {{ banker_stale.days }} Tagen
+        (Schwelle {{ banker_stale.threshold }} Tage). Werte sind möglicherweise nicht mehr aktuell.
+      {% endif %}
+    </div>
+  {% endif %}
+  {% else %}<br><br><strong>Banker-Score:</strong> derzeit nicht verfügbar
+  (<code>data/banker_council_latest.json</code> fehlt oder ist leer).
+  {% endif %}
+</aside>
+
+<form method="get" class="filter-bar" data-stagger-children>
+  <div class="filter-row">
+    <div class="filter-group filter-group-grow">
+      <label class="kpi-label" for="q-input">Suche</label>
+      <input id="q-input" type="search" name="q" value="{{ query }}" placeholder="Ticker oder Unternehmen…" autocomplete="off" />
+    </div>
+    <div class="filter-group">
+      <label class="kpi-label" for="sort-select">Sortieren nach</label>
+      <select id="sort-select" name="sort">
+        <option value="score"   {% if sort == 'score' %}selected{% endif %}>Bewertungs-Score</option>
+        <option value="banker"  {% if sort == 'banker' %}selected{% endif %}>Banker (1-10)</option>
+        <option value="ticker"  {% if sort == 'ticker' %}selected{% endif %}>Ticker</option>
+        <option value="company" {% if sort == 'company' %}selected{% endif %}>Unternehmen</option>
+        <option value="size"    {% if sort == 'size' %}selected{% endif %}>Größe</option>
+        <option value="date"    {% if sort == 'date' %}selected{% endif %}>Datum</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label class="kpi-label" for="dir-select">Richtung</label>
+      <select id="dir-select" name="dir">
+        <option value="desc" {% if direction == 'desc' %}selected{% endif %}>absteigend</option>
+        <option value="asc"  {% if direction == 'asc'  %}selected{% endif %}>aufsteigend</option>
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Anwenden</button>
+  </div>
+
+  <div class="filter-row">
+    <div class="zone-chips" role="group" aria-label="Zonen-Filter">
+      <span class="kpi-label">Zonen:</span>
+      {% for z in all_zones %}
+        <label class="zone-chip zone-chip-{{ z }} {% if z in active_zones %}is-active{% endif %}">
+          <input type="checkbox" name="zone" value="{{ z }}" {% if z in active_zones %}checked{% endif %} />
+          <span class="zone-chip-dot"></span>
+          <span>{{ z|zone_label }}</span>
+        </label>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="filter-row">
+    <div class="confidence-chips" role="group" aria-label="Mindest-Confidence-Filter">
+      <span class="kpi-label">Mindest-Confidence:</span>
+      {% for c in ['insufficient', 'low', 'medium', 'high'] %}
+        {% set is_active = (min_confidence == c) %}
+        <label class="confidence-chip confidence-chip-{{ c }} {% if is_active %}is-active{% endif %}">
+          <input type="radio" name="min_confidence" value="{{ c }}" {% if is_active %}checked{% endif %} />
+          <span class="confidence-chip-dot"></span>
+          <span>{{ {'insufficient':'alle (0+)','low':'low (2+)','medium':'medium (3+)','high':'high (4)'}[c] }}</span>
+        </label>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="filter-row filter-row-bottom">
+    <div class="size-filter">
+      <span class="kpi-label">Größe (KB):</span>
+      <input type="number" step="0.1" min="0" name="min_size" value="{{ min_size if min_size is not none else '' }}" placeholder="min" />
+      <span class="dim">–</span>
+      <input type="number" step="0.1" min="0" name="max_size" value="{{ max_size if max_size is not none else '' }}" placeholder="max" />
+    </div>
+    <div class="view-toggle" role="group" aria-label="Ansicht">
+      <span class="kpi-label">Ansicht:</span>
+      {% set qs_cards = 'view=cards&sort=' ~ sort ~ '&dir=' ~ direction ~ '&zone=' ~ (active_zones|join(',')) ~ '&q=' ~ query ~ '&min_confidence=' ~ min_confidence ~ ('&min_size=' ~ min_size if min_size is not none else '') ~ ('&max_size=' ~ max_size if max_size is not none else '') %}
+      {% set qs_list  = 'view=list&sort=' ~ sort ~ '&dir=' ~ direction ~ '&zone=' ~ (active_zones|join(',')) ~ '&q=' ~ query ~ '&min_confidence=' ~ min_confidence ~ ('&min_size=' ~ min_size if min_size is not none else '') ~ ('&max_size=' ~ max_size if max_size is not none else '') %}
+      <a class="view-btn {% if view == 'cards' %}is-active{% endif %}" href="?{{ qs_cards }}"><span class="view-icon">▦</span> Kacheln</a>
+      <a class="view-btn {% if view == 'list' %}is-active{% endif %}"  href="?{{ qs_list }}"><span class="view-icon">≡</span> Liste</a>
+    </div>
+  </div>
+</form>
+
+{% if ticker_files %}
+  {% if view == 'list' %}
+    <div class="ticker-list-wrap">
+      <table class="ticker-list-table">
+        <thead>
+          <tr>
+            <th>Score</th>
+            <th>Banker</th>
+            <th>Ticker</th>
+            <th>Unternehmen</th>
+            <th>Zone</th>
+            <th>Confidence</th>
+            <th class="num">Größe</th>
+            <th>Datum</th>
+          </tr>
+        </thead>
+        <tbody data-stagger-children>
+          {% for t in ticker_files %}
+            <tr>
+              <td>
+                {% if t.score is not none %}
+                  <span class="score-badge score-{{ t.zone }} mono">{{ '%d'|format(t.score) }}</span>
+                {% else %}
+                  <span class="score-badge score-no-data mono">—</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if t.banker_score is not none %}
+                  <span class="banker-badge banker-{{ t.banker_score|banker_zone_class }} mono"
+                        title="{{ t.banker_label }} (5-Banker-Konsens, Skala 1-10)">
+                    {{ '%.1f'|format(t.banker_score) }}
+                  </span>
+                {% else %}
+                  <span class="banker-badge banker-no-data mono" title="kein Banker-Score vorhanden">—</span>
+                {% endif %}
+              </td>
+              <td class="mono">
+                <a href="{{ url_for('wissensdatenbank_ticker', ticker=t.name) }}" class="link">{{ t.name }}</a>
+              </td>
+              <td><a href="{{ url_for('wissensdatenbank_ticker', ticker=t.name) }}" class="link-company">{{ t.company }}</a></td>
+              <td><span class="zone-pill zone-pill-{{ t.zone }}">{{ t.zone|zone_label }}</span></td>
+              <td>
+                <span class="confidence-pill confidence-pill-{{ t.confidence }}"
+                      title="{{ t.components_available }} von 4 Komponenten verfügbar">
+                  {{ {'insufficient':'insufficient','low':'low','medium':'medium','high':'high'}[t.confidence] }}
+                  <span class="muted small">({{ t.components_available }}/4)</span>
+                </span>
+              </td>
+              <td class="num mono">{{ t.size_kb }} KB</td>
+              <td class="muted mono small">{{ t.modified }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <ul class="ticker-grid" data-stagger-children>
+      {% for t in ticker_files %}
+        <li>
+          <a href="{{ url_for('wissensdatenbank_ticker', ticker=t.name) }}" class="ticker-card">
+            <div class="ticker-card-top">
+              <span class="ticker-company">{{ t.company }}</span>
+              <span class="ticker-badges">
+                {% if t.score is not none %}
+                  <span class="score-badge score-{{ t.zone }} mono" title="Bewertungs-Score (0-100)">{{ '%d'|format(t.score) }}</span>
+                {% else %}
+                  <span class="score-badge score-no-data mono" title="kein Bewertungs-Score">—</span>
+                {% endif %}
+                {% if t.banker_score is not none %}
+                  <span class="banker-badge banker-{{ t.banker_score|banker_zone_class }} mono"
+                        title="{{ t.banker_label }} (5-Banker-Konsens, 1-10)">{{ '%.1f'|format(t.banker_score) }}</span>
+                {% else %}
+                  <span class="banker-badge banker-no-data mono" title="kein Banker-Score">—</span>
+                {% endif %}
+              </span>
+            </div>
+            <span class="ticker-meta">
+              <span class="ticker-ticker mono">{{ t.name }}</span>
+              <span class="ticker-dot" aria-hidden="true">·</span>
+              <span class="ticker-size mono">{{ t.size_kb }} KB</span>
+            </span>
+            <span class="ticker-zone"><span class="zone-pill zone-pill-{{ t.zone }}">{{ t.zone|zone_label }}</span></span>
+            <span class="ticker-confidence">
+              <span class="confidence-pill confidence-pill-{{ t.confidence }}"
+                    title="{{ t.components_available }} von 4 Komponenten verfügbar">
+                {{ {'insufficient':'insufficient','low':'low','medium':'medium','high':'high'}[t.confidence] }}
+                <span class="muted small">({{ t.components_available }}/4)</span>
+              </span>
+            </span>
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% else %}
+  <p class="empty">Keine Einträge passen zu den Filtern. <a href="?" class="link">Filter zurücksetzen</a>.</p>
+{% endif %}
+{% endblock %}

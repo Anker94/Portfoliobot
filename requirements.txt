@@ -1,0 +1,28 @@
+# Core data layer
+yfinance>=0.2.40
+pandas>=2.0
+numpy>=1.24
+
+# HTTP / APIs
+requests>=2.31
+
+# SEC EDGAR
+# (uses requests, no extra dep)
+
+# Web dashboard
+flask>=3.0
+markdown>=3.5
+bleach>=6.1
+
+# Optional: trading calendar awareness
+# pandas_market_calendars>=4.0
+
+# Optional: TA indicators (e.g. bollinger)
+# ta>=0.11
+
+# Optional: LLM support (if you want to use the screening/advocate prompts)
+# openai>=1.0         # for OpenAI-compatible APIs
+# anthropic>=0.20     # for Anthropic
+
+# Dev / Tests
+# pytest>=7.0

@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% block title %}{{ ticker }} · Deep-Dive · Portfoliobot{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <p class="eyebrow mono">
+    <a href="{{ url_for('trigger_log') }}" class="link">← Trigger-Log</a>
+  </p>
+  <h1 class="display mono">Deep-Dive · {{ ticker }}</h1>
+  <p class="lede mono">
+    {% if state.ok %}
+      {{ state.bars }} Bars · Zeitraum {{ state.period }} · yfinance live · abgerufen {{ state.fetched_at }}
+    {% else %}
+      <span class="warn">Daten nicht verfügbar</span> — {{ state.error or 'unbekannter Fehler' }}
+    {% endif %}
+  </p>
+  <p class="actions">
+    <a class="btn btn-ghost" href="{{ url_for('deepdive_export', ticker=ticker) }}">Als Markdown exportieren</a>
+    {% if wiki %}
+      <a class="btn btn-ghost" href="{{ url_for('wissensdatenbank_ticker', ticker=ticker) }}">Wiki-Eintrag öffnen</a>
+    {% endif %}
+    <a class="btn btn-ghost" href="{{ news_url }}" target="_blank" rel="noopener">Aktuelle News suchen ↗</a>
+  </p>
+</section>
+
+{% if not state.ok %}
+  <p class="empty">Marktdaten momentan nicht abrufbar. Retry in ein paar Sekunden.</p>
+{% else %}
+
+<div class="deepdive-grid" data-stagger-children>
+  <section class="deepdive-section deepdive-chart">
+    <h2 class="section-h">Chart · 6 Monate Tageskerzen + Indikatoren</h2>
+    <div id="dd-chart" class="dd-chart-mount" data-market="{{ market_state_json }}"></div>
+  </section>
+
+  <section class="deepdive-section deepdive-signals">
+    <h2 class="section-h">Signale (Daumenregeln)</h2>
+    {% set sigs = state.summary.signals %}
+    <ul class="signal-list">
+      {% for key, sig in sigs.items() %}
+        <li class="signal-row">
+          <span class="signal-key">{{ key|upper }}</span>
+          <span class="signal-pill signal-pill-{{ sig.tone }}">{{ sig.label }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="deepdive-section deepdive-indicators">
+    <h2 class="section-h">Indikatoren (aktuelle Werte)</h2>
+    <div class="kpi-grid">
+      {% set s = state.summary %}
+      <div class="kpi">
+        <p class="kpi-label">Letzter Close</p>
+        <p class="kpi-value mono">{{ '%.2f' % s.last_close if s.last_close is not none else '—' }}</p>
+      </div>
+      <div class="kpi">
+        <p class="kpi-label">RSI (14)</p>
+        <p class="kpi-value mono">{{ '%.1f' % s.rsi14 if s.rsi14 is not none else '—' }}</p>
+      </div>
+      <div class="kpi">
+        <p class="kpi-label">MACD</p>
+        <p class="kpi-value mono">{{ '%+.2f' % s.macd if s.macd is not none else '—' }}</p>
+      </div>
+      <div class="kpi">
+        <p class="kpi-label">MACD Signal</p>
+        <p class="kpi-value mono">{{ '%+.2f' % s.macd_signal if s.macd_signal is not none else '—' }}</p>
+      </div>
+      <div class="kpi">
+        <p class="kpi-label">MA20</p>
+        <p class="kpi-value mono">{{ '%.2f' % s.ma20 if s.ma20 is not none else '—' }}</p>
+        <p class="kpi-sub mono">{{ '%+.1f' % s.pct_vs_ma20 if s.pct_vs_ma20 is not none else '—' }}%</p>
+      </div>
+      <div class="kpi">
+        <p class="kpi-label">MA50</p>
+        <p class="kpi-value mono">{{ '%.2f' % s.ma50 if s.ma50 is not none else '—' }}</p>
+        <p class="kpi-sub mono">{{ '%+.1f' % s.pct_vs_ma50 if s.pct_vs_ma50 is not none else '—' }}%</p>
+      </div>
+      <div class="kpi">
+        <p class="kpi-label">MA200</p>
+        <p class="kpi-value mono">{{ '%.2f' % s.ma200 if s.ma200 is not none else '—' }}</p>
+        <p class="kpi-sub mono">{{ '%+.1f' % s.pct_vs_ma200 if s.pct_vs_ma200 is not none else '—' }}%</p>
+      </div>
+      <div class="kpi">
+        <p class="kpi-label">52W High</p>
+        <p class="kpi-value mono">{{ '%.2f' % s.high_52w if s.high_52w is not none else '—' }}</p>
+      </div>
+      <div class="kpi">
+        <p class="kpi-label">52W Low</p>
+        <p class="kpi-value mono">{{ '%.2f' % s.low_52w if s.low_52w is not none else '—' }}</p>
+      </div>
+      <div class="kpi">
+        <p class="kpi-label">52W Position</p>
+        <p class="kpi-value mono">{{ '%.0f' % s.pos_52w_pct if s.pos_52w_pct is not none else '—' }}%</p>
+        <p class="kpi-sub mono">im 52W-Range</p>
+      </div>
+      <div class="kpi">
+        <p class="kpi-label">Bollinger %b</p>
+        <p class="kpi-value mono">{{ '%.0f' % s.boll_pct_b if s.boll_pct_b is not none else '—' }}%</p>
+        <p class="kpi-sub mono">(0=unter LB, 100=über OB)</p>
+      </div>
+      <div class="kpi">
+        <p class="kpi-label">Volumen (letzte Kerze)</p>
+        <p class="kpi-value mono">{{ '{:,}'.format(s.last_volume) if s.last_volume is not none else '—' }}</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="deepdive-section deepdive-news">
+    <h2 class="section-h">News</h2>
+    {% if news_count > 0 %}
+      <p class="muted">
+        In den letzten 30 Tagen wurden <strong>{{ news_count }}</strong> News-Items für
+        <span class="mono">{{ ticker }}</span> in <code>news_gesehen</code> erfasst.
+      </p>
+    {% else %}
+      <p class="muted">
+        Keine <code>news_gesehen</code>-Einträge für <span class="mono">{{ ticker }}</span> in den letzten 30 Tagen.
+      </p>
+    {% endif %}
+    <p>
+      <a class="btn btn-ghost" href="{{ news_url }}" target="_blank" rel="noopener">
+        Google News für {{ ticker }} öffnen ↗
+      </a>
+    </p>
+  </section>
+
+  <section class="deepdive-section deepdive-wiki">
+    <h2 class="section-h">Wiki-Kontext</h2>
+    {% if wiki %}
+      <p>
+        Eintrag vorhanden: <a class="link mono" href="{{ url_for('wissensdatenbank_ticker', ticker=ticker) }}">{{ wiki.filename }}</a>
+        · {{ wiki.size_kb }} KB
+      </p>
+    {% elif wiki_err %}
+      <p class="muted">Wiki-Lookup fehlgeschlagen: {{ wiki_err }}</p>
+    {% else %}
+      <p class="muted">Kein Wiki-Eintrag für <span class="mono">{{ ticker }}</span>.</p>
+    {% endif %}
+  </section>
+</div>
+
+<!-- Plotly (CDN) -->
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+<script>
+  (function() {
+    var mount = document.getElementById('dd-chart');
+    if (!mount) return;
+    var raw = mount.getAttribute('data-market');
+    var state;
+    try { state = JSON.parse(raw); } catch (e) { return; }
+    if (!state || !state.ok) return;
+
+    var dates = state.dates;
+    var o = state.ohlc;
+    var ind = state.indicators;
+
+    var candle = {
+      type: 'candlestick', x: dates,
+      open: o.open, high: o.high, low: o.low, close: o.close,
+      name: 'OHLC',
+      increasing: { line: { color: '#16a085' } },
+      decreasing: { line: { color: '#c0392b' } },
+      showlegend: false, hoverinfo: 'x+y'
+    };
+    var ma20 = { type: 'scatter', mode: 'lines', x: dates, y: ind.ma20, name: 'MA20', line: { color: '#3498db', width: 1.2 } };
+    var ma50 = { type: 'scatter', mode: 'lines', x: dates, y: ind.ma50, name: 'MA50', line: { color: '#e67e22', width: 1.2 } };
+    var ma200 = { type: 'scatter', mode: 'lines', x: dates, y: ind.ma200, name: 'MA200', line: { color: '#9b59b6', width: 1.2 } };
+    var bollUp = { type: 'scatter', mode: 'lines', x: dates, y: ind.boll_upper, name: 'Bollinger Oben', line: { color: 'rgba(149,165,166,0.6)', width: 1, dash: 'dot' } };
+    var bollLo = { type: 'scatter', mode: 'lines', x: dates, y: ind.boll_lower, name: 'Bollinger Unten', line: { color: 'rgba(149,165,166,0.6)', width: 1, dash: 'dot' } };
+
+    var vol = {
+      type: 'bar', x: dates, y: o.volume, name: 'Volumen',
+      marker: { color: 'rgba(127,140,141,0.35)' },
+      yaxis: 'y2', showlegend: false, hoverinfo: 'x+y'
+    };
+
+    var layout = {
+      autosize: true,
+      margin: { l: 50, r: 20, t: 30, b: 40 },
+      paper_bgcolor: 'rgba(0,0,0,0)',
+      plot_bgcolor: 'rgba(0,0,0,0)',
+      xaxis: { rangeslider: { visible: false }, type: 'date', gridcolor: 'rgba(127,140,141,0.15)' },
+      yaxis: { title: 'Kurs', gridcolor: 'rgba(127,140,141,0.15)' },
+      yaxis2: { title: 'Volumen', overlaying: 'y', side: 'right', showgrid: false, type: 'log' },
+      legend: { orientation: 'h', x: 0, y: 1.08 },
+      hovermode: 'x unified',
+      font: { family: 'Inter, system-ui, sans-serif' }
+    };
+
+    var config = { responsive: true, displaylogo: false, modeBarButtonsToRemove: ['lasso2d','select2d'] };
+
+    Plotly.newPlot('dd-chart', [candle, bollLo, bollUp, ma20, ma50, ma200, vol], layout, config);
+  })();
+</script>
+{% endif %}
+{% endblock %}

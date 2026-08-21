@@ -1,0 +1,14 @@
+# P2 — Markt-Sentiment (Morgen)
+# Modell: Gemini 2.5 Flash (oder tencent/hy3:free). Synthese zu 6 Zeilen.
+
+Fasse die aktuelle Marktlage für den Vormittag zusammen. Du bekommst:
+- Indizes (S&P, Nasdaq, VIX)
+- Fear & Greed Proxy (aus Code berechnet)
+- Sektor-Momentum (aus Regime-Modul)
+- makro Kontext (Zinsen, Oel, Gold)
+
+Liefer einen knappen Morgen-Kommentar (max. 6 Zeilen) + 3 Bullet-Points mit
+Konsequenzen fuer ein tech-lastiges Portfolio. Nenne Risiken (Pflicht-Contra).
+
+Injizierte Daten:
+{market_block}

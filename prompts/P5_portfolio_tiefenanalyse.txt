@@ -1,0 +1,20 @@
+# P5 — Portfolio-Tiefenanalyse (monatlich, Opus/Top-Modell)
+# Liefert strategische Uebersicht + Klumpenrisiken.
+
+Gelieferte Fakten (Code berechnet):
+- Vollstaendige Korrelationsmatrix (E1) + Cluster-Erkennung:
+{korr_block}
+- Effektives Klumpenrisiko je Cluster in % des Portfolios
+- Einzelpositionen mit These, Kurs, Performance: {positions_block}
+- Trefferquote aus Outcome-Berechnung (W1): {outcome_block}
+- Regret-Log (E7): {regret_block}
+- Regime-Kontext: {regime_block}
+
+Analyse:
+1. Wo sind die groessten unsichtbaren Klumpenrisiken? (E1 Fakten, nicht Gefuehl)
+2. Passt das Portfolio zum aktuellen Regime?
+3. Welche Positionen laufen gegen ihre These?
+4. Lern-Befund: Ueber- oder Unterschaetzen wir Event-Risiko?
+
+Antwort als strukturierter Text (deutsch), max. 400 Worte, mit klaren
+Handlungsempfehlungen. Pflicht-Contra (Guardrail 1). Nur gelieferte Daten.
