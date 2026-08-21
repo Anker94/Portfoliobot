@@ -1,18 +1,21 @@
 # Core data layer
-yfinance>=0.2.40
-pandas>=2.0
-numpy>=1.24
+yfinance>=1.6.0
+pandas>=3.0.5
+numpy>=2.5.2
 
 # HTTP / APIs
-requests>=2.31
+requests>=2.34.2
 
 # SEC EDGAR
 # (uses requests, no extra dep)
 
 # Web dashboard
-flask>=3.0
-markdown>=3.5
-bleach>=6.1
+flask>=3.1.3
+markdown>=3.10.3
+# NOTE: bleach 6.4 (2026-06-05) is the FINAL release -- project is no longer
+# maintained. Used for HTML sanitization in the dashboard templates. Migration
+# to a maintained alternative (nh3, html-sanitizer) tracked in v2.
+bleach>=6.4.0
 
 # Optional: trading calendar awareness
 # pandas_market_calendars>=4.0
