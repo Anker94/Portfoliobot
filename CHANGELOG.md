@@ -37,5 +37,5 @@ Open-Source-Projekt.
 **Lizenz**
 - MIT
 
-[Unreleased]: https://github.com/<owner>/portfoliobot/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/<owner>/portfoliobot/releases/tag/v0.1.0
+[Unreleased]: https://github.com/Anker94/portfoliobot/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/Anker94/portfoliobot/releases/tag/v0.1.0

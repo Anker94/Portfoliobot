@@ -6,15 +6,15 @@ Doku-Korrektur, neues Feature, neuer Ticker-Template — ist willkommen.
 
 ## Quick links
 
-- **Bug melden:** [Issue-Tracker](https://github.com/<owner>/portfoliobot/issues/new?template=bug_report.md)
-- **Feature vorschlagen:** [Feature-Request](https://github.com/<owner>/portfoliobot/issues/new?template=feature_request.md)
+- **Bug melden:** [Issue-Tracker](https://github.com/Anker94/portfoliobot/issues/new?template=bug_report.md)
+- **Feature vorschlagen:** [Feature-Request](https://github.com/Anker94/portfoliobot/issues/new?template=feature_request.md)
 - **Sicherheitslücke melden:** siehe [SECURITY.md](SECURITY.md)
-- **Diskussion / Fragen:** [Discussions](https://github.com/<owner>/portfoliobot/discussions)
+- **Diskussion / Fragen:** [Discussions](https://github.com/Anker94/portfoliobot/discussions)
 
 ## Development-Setup
 
 ```bash
-git clone https://github.com/<owner>/portfoliobot.git
+git clone https://github.com/Anker94/portfoliobot.git
 cd portfoliobot
 python -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
@@ -49,7 +49,7 @@ CI läuft automatisch bei jedem Push (siehe `.github/workflows/test.yml`).
 
 ## Was wir aktuell brauchen
 
-Schau in die [Issues](https://github.com/<owner>/portfoliobot/issues)
+Schau in die [Issues](https://github.com/Anker94/portfoliobot/issues)
 mit Label `good first issue` — das sind Beiträge, die ohne tiefes
 Code-Verständnis gehen (Doku, einfache Bug-Fixes, neue Templates).
 

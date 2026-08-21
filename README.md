@@ -1,6 +1,6 @@
 # Portfoliobot
 
-[![Tests](https://github.com/<owner>/portfoliobot/actions/workflows/test.yml/badge.svg)](https://github.com/<owner>/portfoliobot/actions/workflows/test.yml)
+[![Tests](https://github.com/Anker94/portfoliobot/actions/workflows/test.yml/badge.svg)](https://github.com/Anker94/portfoliobot/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 
@@ -194,8 +194,8 @@ Beiträge sind willkommen — Bugs, Doku-Korrekturen, neue Features,
 neue Ticker-Templates. Bitte lies [CONTRIBUTING.md](CONTRIBUTING.md)
 vor dem ersten PR.
 
-- **Bug melden:** [Issue-Tracker](https://github.com/<owner>/portfoliobot/issues/new?template=bug_report.md)
-- **Feature vorschlagen:** [Feature-Request](https://github.com/<owner>/portfoliobot/issues/new?template=feature_request.md)
+- **Bug melden:** [Issue-Tracker](https://github.com/Anker94/portfoliobot/issues/new?template=bug_report.md)
+- **Feature vorschlagen:** [Feature-Request](https://github.com/Anker94/portfoliobot/issues/new?template=feature_request.md)
 - **Sicherheitslücke:** siehe [SECURITY.md](SECURITY.md) — **bitte kein
   öffentliches Issue**, koordinierte Disclosure bevorzugt
 
