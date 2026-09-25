@@ -1,7 +1,7 @@
 # Core data layer
-yfinance>=1.6.0
-pandas>=3.0.5
-numpy>=2.5.2
+yfinance>=1.7.0
+pandas>=3.0.6
+numpy>=2.5.3
 
 # HTTP / APIs
 requests>=2.34.2
